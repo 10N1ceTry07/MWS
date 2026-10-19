@@ -184,7 +184,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
             origin = self.headers.get('Origin')
-            if origin and origin != 'http://' + self.headers.get('Host', ''):
+            host = self.headers.get('Host', '')
+            # Render terminates HTTPS before forwarding to this HTTP server.
+            # Compare complete origins; never accept arbitrary forwarded headers.
+            allowed_origins = {'http://' + host, 'https://' + host} if host else set()
+            if origin is not None and origin not in allowed_origins:
                 return self.send(403, {'error':'Недозволене джерело запиту.'})
             if not self.headers.get('Content-Type','').startswith('application/json'):
                 return self.send(415, {'error':'Потрібен JSON.'})
